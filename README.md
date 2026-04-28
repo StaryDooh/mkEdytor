@@ -27,10 +27,13 @@ Program jest udostępniany w formie wygodnego instalatora dla systemu Windows.
 4. Po instalacji skrót do programu pojawi się na Twoim pulpicie.
 
 **Dla nauczycieli - instalacja nienadzorowana**
-Instalacja:
+
+* Instalacja:
+
 Setup_mkEdytor_vXXXX.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
 
-Deinstalacja:
+* Deinstalacja:
+
 "C:\Program Files (x86)\mkEdytor\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES
 
 ## 💻 Wymagania systemowe
