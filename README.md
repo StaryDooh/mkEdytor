@@ -24,7 +24,7 @@ Pobierz: [Releases](https://github.com/StaryDooh/mkEdytor/releases/)
 Program jest udostępniany w formie wygodnego instalatora dla systemu Windows. 
 
 1. Przejdź do zakładki [Releases](https://github.com/StaryDooh/mkEdytor/releases/) w tym repozytorium.
-2. Pobierz najnowszą wersję pliku: [Setup_mkEdytor.exe([Releases](https://github.com/StaryDooh/mkEdytor/releases/).
+2. Pobierz najnowszą wersję pliku: [Setup_mkEdytor.exe](https://github.com/StaryDooh/mkEdytor/releases/).
 3. Uruchom instalator i postępuj zgodnie z instrukcjami na ekranie (może być wymagane uruchomienie z uprawnieniami administratora).
 4. Po instalacji skrót do programu pojawi się na Twoim pulpicie.
 
