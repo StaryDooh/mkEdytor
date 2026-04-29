@@ -1,0 +1,41 @@
+# Changelog (Historia zmian)
+
+---
+
+## [1.0.1.3]
+
+### Dodano
+* **Drukowanie:** Nowa opcja "Drukuj" (Ctrl+P) w menu `Plik`, pozwalająca na bezpośrednie drukowanie dokumentów z zachowaniem ich pełnego formatowania.
+* **Ponawianie akcji:** Dodano opcję "Ponów" (Ctrl+Y) w menu `Edytuj`, uzupełniającą system cofania zmian.
+* **Rozbudowane menu "Odwiedź":** Zamiast pojedynczego przycisku, menu teraz rozwija się, oferując szybki dostęp do przydatnych linków:
+  * *Pobierz najnowszą wersję* (przekierowanie do wydań na GitHubie).
+  * *Zgłoś błąd* (przekierowanie do zakładki Issues na GitHubie).
+  * *Zrelaksuj się* (przekierowanie na kanał StaryDooh na YouTube).
+
+---
+
+## [1.0.1.2]
+
+### Naprawiono
+* **Znikający tekst:** Usunięto krytyczny błąd polegający na znikaniu pierwszej linii tekstu podczas próby zmiany jej formatowania (czcionki, rozmiaru lub koloru).
+* **Konflikty formatowania:** Zoptymalizowano mechanizm nakładania stylów. Zmiany formatu są teraz zamykane w pojedynczych blokach edycyjnych (`QTextCursor.beginEditBlock()`), co stabilizuje renderowanie tekstu i zapobiega konfliktom między stylem akapitu a stylem pojedynczych znaków.
+* **Punkty i listy:** Poprawiono logikę skalowania punktorów w listach. Znaki wypunktowania bezbłędnie dziedziczą teraz rozmiar i kolor czcionki tekstu głównego.
+
+---
+
+## [1.0.1.1]
+
+### Dodano (Pierwsze stabilne wydanie)
+* **Interfejs użytkownika:** Intuicyjny, graficzny interfejs (GUI) stworzony w bibliotece PyQt6, dostosowany do potrzeb edukacyjnych (duże ikony, czytelny układ).
+* **Formatowanie tekstu:** * Zmiana kroju pisma (odczyt czcionek systemowych).
+  * Zmiana rozmiaru tekstu (od 8 do 72 pkt).
+  * Paleta kolorów (zmiana koloru tekstu).
+  * Style: **Pogrubienie**, *Pochylenie*, U̲nderline (Podkreślenie).
+* **Akapity i listy:**
+  * Wyrównywanie: do lewej, do środka, do prawej, justowanie.
+  * Inteligentne wstawianie list punktowanych i numerowanych.
+* **Zarządzanie plikami:**
+  * Tworzenie, otwieranie i zapisywanie plików ze wsparciem dla formatów `.txt` (zwykły tekst) oraz `.html` (tekst sformatowany).
+  * Eksport dokumentów do standardu `.odt` (LibreOffice / OpenOffice).
+  * Generowanie plików `.pdf` do bezpośredniego wydruku lub wysyłki.
+* **Optymalizacje:** Utrzymywanie ustalonego formatowania nawet po wyczyszczeniu okna edytora.

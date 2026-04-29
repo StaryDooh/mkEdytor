@@ -1,6 +1,7 @@
 # mkEdytor ✍️
 
 **mkEdytor** to prosty w obsłudze edytor tekstu, stworzony z myślą o dzieciach klas 1-3 oraz celach edukacyjnych. Program jest idealnym narzędziem dla uczniów stawiających pierwsze kroki w nauce pisania i formatowania dokumentów na komputerze.
+Pobierz: [Releases](https://github.com/StaryDooh/mkEdytor/releases/)
 
 ## ✨ Najważniejsze funkcje
 
@@ -21,8 +22,8 @@
 
 Program jest udostępniany w formie wygodnego instalatora dla systemu Windows. 
 
-1. Przejdź do zakładki **Releases** w tym repozytorium.
-2. Pobierz najnowszą wersję pliku: `Setup_mkEdytor.exe`.
+1. Przejdź do zakładki [Releases](https://github.com/StaryDooh/mkEdytor/releases/) w tym repozytorium.
+2. Pobierz najnowszą wersję pliku: [Setup_mkEdytor.exe([Releases](https://github.com/StaryDooh/mkEdytor/releases/).
 3. Uruchom instalator i postępuj zgodnie z instrukcjami na ekranie (może być wymagane uruchomienie z uprawnieniami administratora).
 4. Po instalacji skrót do programu pojawi się na Twoim pulpicie.
 
@@ -48,5 +49,13 @@ Program **mkEdytor** jest udostępniany jako oprogramowanie darmowe (**Freeware*
 **Ważne:** Przed instalacją i rozpoczęciem korzystania z oprogramowania, każdy użytkownik ma obowiązek zapoznać się z pełną treścią dokumentu **LICENSE** (EULA) dołączonego do programu i dostępnego w tym repozytorium. Instalacja programu oznacza akceptację wszystkich warunków licencyjnych.
 
 
+## 👤 Autor
+**Krzysztof Markowski**
+Jeśli masz pytania lub chcesz zgłosić błąd, możesz skontaktować się ze mną poprzez https://github.com/StaryDooh/mkEdytor/issues/ (duży zielony przycisk "New issue" lub "Otwórz zgłoszenie").
+
 ---
-*Copyright © 2026 Krzysztof Markowski. Wszelkie prawa zastrzeżone.*
+*Program dostarczany w stanie "takim, w jakim jest" (as is).*
+
+_______________________
+Krzysztof Markowski
+https://www.youtube.com/@StaryDooh
