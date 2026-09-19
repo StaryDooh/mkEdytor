@@ -1,0 +1,12 @@
++++++++++++++
+Instalacja:
++++++++++++++
+
+Setup_mkEdytor.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART
+
+
+++++++++++++++
+Deinstalacja:
+++++++++++++++
+
+"C:\Program Files (x86)\mkEdytor\unins000.exe" /VERYSILENT /SUPPRESSMSGBOXES
