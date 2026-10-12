@@ -1,5 +1,10 @@
 # Changelog (Historia zmian)
 
+## [1.0.2.1]
+
+### Zmieniono
+- ZMieniono ikonę na bardziej nowoczesną.
+
 ## [1.0.2.0]
 
 ### Zmieniono
