@@ -1,12 +1,13 @@
 import sys
 import os
+import json
 from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QToolBar,
                              QComboBox, QSpinBox, QColorDialog, QFileDialog,
                              QMessageBox)
 from PyQt6.QtGui import (QFont, QAction, QFontDatabase, QTextListFormat,
                          QKeySequence, QIcon, QTextDocumentWriter, QPdfWriter,
                          QPageSize, QDesktopServices, QTextCharFormat)
-from PyQt6.QtCore import Qt, QUrl, QStandardPaths
+from PyQt6.QtCore import Qt, QUrl, QStandardPaths, QSettings, QTimer
 from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 
 
@@ -19,14 +20,109 @@ def sciezka_zasobu(wzgledna_sciezka):
     return os.path.join(baza, wzgledna_sciezka)
 
 
+# --- FORMAT DOKUMENTU mkEdytora (.mked) ---
+# Plik .mked to tekst UTF-8 w formacie JSON:
+#   {"format": "mkEdytor", "wersja_formatu": 1, "program": "...", "tresc": "<html Qt>"}
+# Pole "wersja_formatu" pozwoli w przyszłości rozbudować format (np. o obrazki)
+# bez utraty zgodności ze starszymi dokumentami.
+ROZSZERZENIE = ".mked"
+FORMAT_ID = "mkEdytor"
+FORMAT_WERSJA = 1
+PROGID = "mkEdytor.dokument"   # identyfikator typu pliku w rejestrze (taki sam jak w instalatorze)
+
+
+# --- SKOJARZENIE PLIKÓW .mked Z PROGRAMEM (tylko Windows) ---
+def obsluga_skojarzen():
+    """Skojarzenia ustawiamy tylko w zbudowanym .exe na Windows.
+    Przy uruchamianiu z Pythona skojarzyłoby to pliki z python.exe."""
+    return sys.platform == "win32" and getattr(sys, "frozen", False)
+
+
+def _program_dla_rozszerzenia(rozszerzenie):
+    """Zwraca ścieżkę programu, którym Windows faktycznie otworzy plik
+    (uwzględnia też wybór użytkownika z okna „Otwórz za pomocą”)."""
+    import ctypes
+    from ctypes import wintypes
+    ASSOCF_INIT_IGNOREUNKNOWN = 0x400
+    ASSOCSTR_EXECUTABLE = 2
+    funkcja = ctypes.windll.shlwapi.AssocQueryStringW
+    funkcja.argtypes = [wintypes.DWORD, ctypes.c_int, wintypes.LPCWSTR, wintypes.LPCWSTR,
+                        wintypes.LPWSTR, ctypes.POINTER(wintypes.DWORD)]
+    funkcja.restype = ctypes.c_long
+    rozmiar = wintypes.DWORD(1024)
+    bufor = ctypes.create_unicode_buffer(rozmiar.value)
+    wynik = funkcja(ASSOCF_INIT_IGNOREUNKNOWN, ASSOCSTR_EXECUTABLE, rozszerzenie,
+                    None, bufor, ctypes.byref(rozmiar))
+    return bufor.value if wynik == 0 else None
+
+
+def czy_mked_skojarzony():
+    program = _program_dla_rozszerzenia(ROZSZERZENIE)
+    if not program:
+        return False
+    try:
+        return os.path.samefile(program, sys.executable)
+    except OSError:
+        return (os.path.normcase(os.path.abspath(program))
+                == os.path.normcase(os.path.abspath(sys.executable)))
+
+
+def _usun_klucz_rekurencyjnie(korzen, sciezka):
+    import winreg
+    try:
+        with winreg.OpenKey(korzen, sciezka, 0, winreg.KEY_READ) as klucz:
+            podklucze = []
+            i = 0
+            while True:
+                try:
+                    podklucze.append(winreg.EnumKey(klucz, i))
+                    i += 1
+                except OSError:
+                    break
+        for podklucz in podklucze:
+            _usun_klucz_rekurencyjnie(korzen, sciezka + "\\" + podklucz)
+        winreg.DeleteKey(korzen, sciezka)
+    except FileNotFoundError:
+        pass
+
+
+def skojarz_mked_dla_uzytkownika():
+    """Rejestruje .mked dla bieżącego użytkownika (HKCU) – nie wymaga uprawnień
+    administratora. Usuwa też wcześniejszy wybór innego programu dla .mked."""
+    import winreg
+    import ctypes
+    exe = sys.executable
+    klasy = r"Software\Classes"
+    wpisy = [
+        (rf"{klasy}\{PROGID}", "", "Dokument mkEdytor"),
+        (rf"{klasy}\{PROGID}\DefaultIcon", "", f'"{exe}",0'),
+        (rf"{klasy}\{PROGID}\shell\open\command", "", f'"{exe}" "%1"'),
+        (rf"{klasy}\{ROZSZERZENIE}", "", PROGID),
+        (rf"{klasy}\{ROZSZERZENIE}\OpenWithProgids", PROGID, ""),
+    ]
+    for sciezka, nazwa, wartosc in wpisy:
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, sciezka) as klucz:
+            winreg.SetValueEx(klucz, nazwa, 0, winreg.REG_SZ, wartosc)
+
+    # Wybór z okna „Otwórz za pomocą → Zawsze” (UserChoice) ma pierwszeństwo
+    # przed rejestracją – .mked to nasze rozszerzenie, więc go kasujemy.
+    _usun_klucz_rekurencyjnie(
+        winreg.HKEY_CURRENT_USER,
+        r"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts" + "\\" + ROZSZERZENIE)
+
+    SHCNE_ASSOCCHANGED = 0x08000000
+    ctypes.windll.shell32.SHChangeNotify(SHCNE_ASSOCCHANGED, 0, None, None)
+
+
 class NowoczesnyEdytor(QMainWindow):
 
     # Wersja jako stała klasy
-    WERSJA = "1.0.2.0"
+    WERSJA = "2.0.1.1"
+    NAZWA_DOMYSLNA = "Bez nazwy"   # nazwa nowego, niezapisanego dokumentu
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"mkEdytor v{self.WERSJA} - Nowy dokument")
+        self.setWindowTitle(f"mkEdytor v{self.WERSJA} - {self.NAZWA_DOMYSLNA}")
         self.resize(1000, 700)
 
         self.setWindowIcon(QIcon(sciezka_zasobu("ikona.ico")))
@@ -34,7 +130,8 @@ class NowoczesnyEdytor(QMainWindow):
         self.pulpit = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.DesktopLocation)
         self.ostatni_katalog = self.pulpit
 
-        self.aktualny_plik = None
+        self.aktualny_plik = None      # ścieżka do pliku .mked (lub None)
+        self.nazwa_importu = None      # nazwa zaimportowanego pliku .html/.txt (lub None)
 
         # Flaga śledzenia niezapisanych zmian
         self.zmodyfikowany = False
@@ -80,14 +177,32 @@ class NowoczesnyEdytor(QMainWindow):
 
     def _aktualizuj_tytul(self):
         if self.aktualny_plik:
-            nazwa = self.aktualny_plik
+            nazwa = os.path.basename(self.aktualny_plik)
+        elif self.nazwa_importu:
+            nazwa = f"{self.nazwa_importu} (zaimportowany)"
         else:
-            nazwa = "Nowy dokument"
+            nazwa = self.NAZWA_DOMYSLNA
         prefiks = "* " if self.zmodyfikowany else ""
         self.setWindowTitle(f"{prefiks}mkEdytor v{self.WERSJA} - {nazwa}")
-        
-    def _czy_html(self, sciezka):
-        return os.path.splitext(sciezka)[1].lower() in ('.html', '.htm')
+
+    @staticmethod
+    def _z_rozszerzeniem(sciezka, rozszerzenie, dozwolone=None):
+        """Dopisuje rozszerzenie, jeśli użytkownik go nie podał."""
+        dozwolone = dozwolone or (rozszerzenie,)
+        if os.path.splitext(sciezka)[1].lower() not in dozwolone:
+            sciezka += rozszerzenie
+        return sciezka
+
+    def _domyslna_sciezka(self, rozszerzenie):
+        """Proponowana nazwa pliku w oknach zapisu i eksportu."""
+        if self.aktualny_plik:
+            nazwa = os.path.basename(self.aktualny_plik)
+        elif self.nazwa_importu:
+            nazwa = self.nazwa_importu
+        else:
+            nazwa = self.NAZWA_DOMYSLNA
+        nazwa = os.path.splitext(nazwa)[0] + rozszerzenie
+        return os.path.join(self.ostatni_katalog, nazwa)
 
     def closeEvent(self, event):
         if self.zmodyfikowany:
@@ -141,9 +256,20 @@ class NowoczesnyEdytor(QMainWindow):
         akcja_eksport_odt.triggered.connect(self.eksportuj_odt)
         menu_plik.addAction(akcja_eksport_odt)
 
+        akcja_eksport_html = QAction("Wyeksportuj do HTML (strona internetowa)", self)
+        akcja_eksport_html.triggered.connect(self.eksportuj_html)
+        menu_plik.addAction(akcja_eksport_html)
+
         akcja_eksport_pdf = QAction("Wyeksportuj do PDF", self)
         akcja_eksport_pdf.triggered.connect(self.eksportuj_pdf)
         menu_plik.addAction(akcja_eksport_pdf)
+
+        menu_plik.addSeparator()
+
+        akcja_skojarz = QAction(f"Otwieraj pliki {ROZSZERZENIE} w mkEdytorze", self)
+        akcja_skojarz.triggered.connect(lambda: self.sprawdz_skojarzenie(na_zadanie=True))
+        akcja_skojarz.setEnabled(obsluga_skojarzen())
+        menu_plik.addAction(akcja_skojarz)
 
         # --- MENU EDYTUJ ---
         menu_edytuj = pasek_menu.addMenu("Edytuj")
@@ -386,6 +512,7 @@ class NowoczesnyEdytor(QMainWindow):
         self.edytor.clear()
         self.utrzymaj_formatowanie()
         self.aktualny_plik = None
+        self.nazwa_importu = None
         self.zmodyfikowany = False
         self._aktualizuj_tytul()
 
@@ -401,20 +528,81 @@ class NowoczesnyEdytor(QMainWindow):
 
         sciezka, _ = QFileDialog.getOpenFileName(
             self, "Otwórz plik", self.ostatni_katalog,
-            "Pliki z formatowaniem (*.html);;Zwykły tekst (*.txt);;Wszystkie pliki (*.*)"
+            f"Dokument mkEdytor (*{ROZSZERZENIE});;"
+            "Starsze dokumenty – import (*.html *.htm *.txt);;"
+            "Wszystkie pliki (*.*)"
         )
         if sciezka:
-            self.ostatni_katalog = os.path.dirname(sciezka)
+            self.wczytaj_plik(sciezka)
+
+    def wczytaj_plik(self, sciezka):
+        """Otwiera dokument .mked albo importuje starszy plik .html / .txt.
+
+        Używane przez menu „Otwórz” oraz przy uruchomieniu z argumentem
+        (dwuklik na pliku .mked w Eksploratorze Windows).
+        """
+        sciezka = os.path.abspath(sciezka)
+        self.ostatni_katalog = os.path.dirname(sciezka)
+        rozszerzenie = os.path.splitext(sciezka)[1].lower()
+
+        if rozszerzenie == ROZSZERZENIE:
+            html = self._czytaj_mked(sciezka)
+            if html is None:
+                return False
+            self.edytor.setHtml(html)
+            self.aktualny_plik = sciezka
+            self.nazwa_importu = None
+        else:
+            # Import: plik źródłowy nie zostanie nadpisany –
+            # „Zapisz” zaproponuje zapis jako nowy dokument .mked.
             zawartosc = self._czytaj_plik(sciezka)
             if zawartosc is None:
-                return 
-            if self._czy_html(sciezka):
+                return False
+            if rozszerzenie in (".html", ".htm"):
                 self.edytor.setHtml(zawartosc)
             else:
                 self.edytor.setPlainText(zawartosc)
-            self.aktualny_plik = sciezka
-            self.zmodyfikowany = False
-            self._aktualizuj_tytul()
+            self.aktualny_plik = None
+            self.nazwa_importu = os.path.basename(sciezka)
+
+        self.zmodyfikowany = False
+        self._aktualizuj_tytul()
+        return True
+
+    def _czytaj_mked(self, sciezka):
+        """Zwraca treść HTML dokumentu .mked albo None przy błędzie."""
+        try:
+            with open(sciezka, "r", encoding="utf-8-sig") as plik:
+                surowe = plik.read()
+            if not surowe.strip():
+                return ""  # pusty plik = pusty dokument
+            dane = json.loads(surowe)
+        except (OSError, ValueError) as e:
+            QMessageBox.critical(
+                self, "Błąd",
+                "Nie udało się otworzyć dokumentu.\n"
+                "Plik może być uszkodzony albo nie jest dokumentem mkEdytora.\n\n"
+                f"Szczegóły: {e}"
+            )
+            return None
+
+        if (not isinstance(dane, dict) or dane.get("format") != FORMAT_ID
+                or not isinstance(dane.get("tresc"), str)):
+            QMessageBox.critical(
+                self, "Błąd",
+                "Ten plik nie jest dokumentem mkEdytora albo jest uszkodzony."
+            )
+            return None
+
+        wersja_formatu = dane.get("wersja_formatu", 1)
+        if isinstance(wersja_formatu, int) and wersja_formatu > FORMAT_WERSJA:
+            QMessageBox.warning(
+                self, "Nowsza wersja dokumentu",
+                "Ten dokument został utworzony w nowszej wersji mkEdytora.\n"
+                "Część formatowania może się nie wyświetlić.\n\n"
+                "Pobierz najnowszą wersję programu z menu „Odwiedź”."
+            )
+        return dane["tresc"]
 
     def _czytaj_plik(self, sciezka):
         # Lista popularnych kodowań (od najczęstszych po regionalne)
@@ -455,35 +643,56 @@ class NowoczesnyEdytor(QMainWindow):
 
     def zapisz_plik(self):
         if self.aktualny_plik:
-            self.zapisz_na_dysk(self.aktualny_plik)
-        else:
-            self.zapisz_jako()
+            return self.zapisz_na_dysk(self.aktualny_plik)
+        return self.zapisz_jako()
 
     def zapisz_jako(self):
         sciezka, _ = QFileDialog.getSaveFileName(
-            self, "Zapisz jako", self.ostatni_katalog,
-            "Plik z formatowaniem (*.html);;Zwykły tekst (*.txt)"
+            self, "Zapisz jako", self._domyslna_sciezka(ROZSZERZENIE),
+            f"Dokument mkEdytor (*{ROZSZERZENIE})"
         )
-        if sciezka:
-            self.ostatni_katalog = os.path.dirname(sciezka)
+        if not sciezka:
+            return False
+        sciezka = self._z_rozszerzeniem(sciezka, ROZSZERZENIE)
+        self.ostatni_katalog = os.path.dirname(sciezka)
+        # Ścieżkę zapamiętujemy dopiero po udanym zapisie
+        if self.zapisz_na_dysk(sciezka):
             self.aktualny_plik = sciezka
-            self.zapisz_na_dysk(sciezka)
+            self.nazwa_importu = None
+            self._aktualizuj_tytul()
+            return True
+        return False
 
     def zapisz_na_dysk(self, sciezka):
-        try:
-            tresc = self.edytor.toHtml() if self._czy_html(sciezka) else self.edytor.toPlainText()
-            tmp = sciezka + ".tmp"
-            
-            with open(tmp, 'w', encoding='utf-8') as f:
-                f.write(tresc)
-                f.flush()
-                os.fsync(f.fileno())
-                
-            os.replace(tmp, sciezka)
+        dane = {
+            "format": FORMAT_ID,
+            "wersja_formatu": FORMAT_WERSJA,
+            "program": f"mkEdytor {self.WERSJA}",
+            "tresc": self.edytor.toHtml(),
+        }
+        tresc = json.dumps(dane, ensure_ascii=False, indent=1)
+        if self._zapisz_atomowo(sciezka, tresc):
             self.zmodyfikowany = False
             self._aktualizuj_tytul()
             return True
-        except Exception as e:
+        return False
+
+    def _zapisz_atomowo(self, sciezka, tresc):
+        """Zapis przez plik tymczasowy – przerwany zapis nie niszczy oryginału."""
+        tmp = sciezka + ".tmp"
+        try:
+            with open(tmp, "w", encoding="utf-8") as f:
+                f.write(tresc)
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, sciezka)
+            return True
+        except OSError as e:
+            try:
+                if os.path.exists(tmp):
+                    os.remove(tmp)
+            except OSError:
+                pass
             QMessageBox.critical(self, "Błąd", f"Nie udało się zapisać pliku:\n{e}")
             return False
 
@@ -495,10 +704,11 @@ class NowoczesnyEdytor(QMainWindow):
 
     def eksportuj_odt(self):
         sciezka, _ = QFileDialog.getSaveFileName(
-            self, "Eksportuj do ODT", self.ostatni_katalog,
+            self, "Eksportuj do ODT", self._domyslna_sciezka(".odt"),
             "Plik LibreOffice Writer (*.odt)"
         )
         if sciezka:
+            sciezka = self._z_rozszerzeniem(sciezka, ".odt")
             try:
                 writer = QTextDocumentWriter(sciezka)
                 if writer.write(self.edytor.document()):
@@ -514,10 +724,11 @@ class NowoczesnyEdytor(QMainWindow):
 
     def eksportuj_pdf(self):
         sciezka, _ = QFileDialog.getSaveFileName(
-            self, "Eksportuj do PDF", self.ostatni_katalog,
+            self, "Eksportuj do PDF", self._domyslna_sciezka(".pdf"),
             "Pliki PDF (*.pdf)"
         )
         if sciezka:
+            sciezka = self._z_rozszerzeniem(sciezka, ".pdf")
             try:
                 pdf_writer = QPdfWriter(sciezka)
                 pdf_writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
@@ -526,10 +737,92 @@ class NowoczesnyEdytor(QMainWindow):
             except Exception as e:
                 QMessageBox.critical(self, "Błąd", f"Błąd eksportu PDF:\n{e}")
 
+    def sprawdz_skojarzenie(self, na_zadanie=False):
+        """Sprawdza, czy pliki .mked otwierają się w mkEdytorze, i proponuje naprawę.
+
+        na_zadanie=False – automatycznie przy starcie (można wyłączyć „Nie pytaj więcej”),
+        na_zadanie=True  – z menu Plik.
+        """
+        if not obsluga_skojarzen():
+            return
+        ustawienia = QSettings("Krzysztof Markowski", "mkEdytor")
+        if not na_zadanie and ustawienia.value("nie_pytaj_o_skojarzenie", False, type=bool):
+            return
+
+        try:
+            skojarzony = czy_mked_skojarzony()
+        except Exception:
+            return  # nie przeszkadzamy dziecku, jeśli nie da się tego sprawdzić
+
+        if skojarzony:
+            if na_zadanie:
+                QMessageBox.information(
+                    self, "Pliki mkEdytora",
+                    f"Wszystko w porządku – pliki {ROZSZERZENIE} otwierają się w mkEdytorze.")
+            return
+
+        if not na_zadanie:
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Pliki mkEdytora")
+            msg.setIcon(QMessageBox.Icon.Question)
+            msg.setText(
+                f"Dokumenty mkEdytora (pliki {ROZSZERZENIE}) nie otwierają się teraz w mkEdytorze.\n\n"
+                "Czy ustawić, żeby otwierały się w mkEdytorze po dwukrotnym kliknięciu?")
+            btn_tak = msg.addButton("Tak", QMessageBox.ButtonRole.AcceptRole)
+            msg.addButton("Nie teraz", QMessageBox.ButtonRole.RejectRole)
+            btn_nigdy = msg.addButton("Nie pytaj więcej", QMessageBox.ButtonRole.DestructiveRole)
+            msg.exec()
+            if msg.clickedButton() == btn_nigdy:
+                ustawienia.setValue("nie_pytaj_o_skojarzenie", True)
+                return
+            if msg.clickedButton() != btn_tak:
+                return
+
+        try:
+            skojarz_mked_dla_uzytkownika()
+        except OSError as e:
+            QMessageBox.critical(self, "Błąd", f"Nie udało się ustawić skojarzenia plików:\n{e}")
+            return
+
+        if czy_mked_skojarzony():
+            ustawienia.setValue("nie_pytaj_o_skojarzenie", False)
+            QMessageBox.information(
+                self, "Gotowe",
+                f"Gotowe! Pliki {ROZSZERZENIE} będą się teraz otwierać w mkEdytorze.")
+        else:
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Potrzebna pomoc")
+            msg.setIcon(QMessageBox.Icon.Information)
+            msg.setText(
+                f"Windows nie pozwolił automatycznie ustawić mkEdytora dla plików {ROZSZERZENIE}.\n\n"
+                "Otwórz ustawienia „Aplikacje domyślne”, wpisz w wyszukiwaniu "
+                f"„{ROZSZERZENIE}” i wybierz mkEdytor.")
+            btn_ustawienia = msg.addButton("Otwórz ustawienia", QMessageBox.ButtonRole.AcceptRole)
+            msg.addButton("Zamknij", QMessageBox.ButtonRole.RejectRole)
+            msg.exec()
+            if msg.clickedButton() == btn_ustawienia:
+                QDesktopServices.openUrl(QUrl("ms-settings:defaultapps"))
+
+    def eksportuj_html(self):
+        sciezka, _ = QFileDialog.getSaveFileName(
+            self, "Eksportuj do HTML", self._domyslna_sciezka(".html"),
+            "Strona internetowa (*.html *.htm)"
+        )
+        if sciezka:
+            sciezka = self._z_rozszerzeniem(sciezka, ".html", (".html", ".htm"))
+            # Eksport nie zmienia bieżącego dokumentu ani stanu „niezapisany”
+            if self._zapisz_atomowo(sciezka, self.edytor.toHtml()):
+                QMessageBox.information(self, "Sukces", "Pomyślnie wyeksportowano plik HTML.")
+
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
     okno = NowoczesnyEdytor()
+    # Dwuklik na pliku .mked w Eksploratorze: Windows przekazuje ścieżkę jako argument
+    if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
+        okno.wczytaj_plik(sys.argv[1])
     okno.showMaximized()
-    sys.exit(app.exec())
+    # Sprawdzenie skojarzenia .mked dopiero po pokazaniu okna
+    QTimer.singleShot(500, okno.sprawdz_skojarzenie)
+    sys.exit(app.exec())

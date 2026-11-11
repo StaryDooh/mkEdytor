@@ -1,10 +1,12 @@
-﻿#define MyAppVersion "1.0.2.1"
+; Wersja jest odczytywana z gotowego mkEdytor.exe (z wersja.txt wbudowanego przez PyInstaller),
+; więc nie trzeba jej już wpisywać ręcznie w tym pliku.
+; Najpierw uruchom Budowanie_EXE.bat, dopiero potem kompiluj ten skrypt.
+#define MyAppExe "dist\mkEdytor\mkEdytor.exe"
+#define MyAppVersion GetVersionNumbersString(AddBackslash(SourcePath) + MyAppExe)
 
 
 [Setup]
-; --- BARDZO WAŻNE: Wygeneruj swój własny AppId! ---
-; W Inno Setup kliknij u góry: Tools -> Generate GUID (lub Shift+Ctrl+G)
-; i podmień poniższy ciąg znaków (zostaw tylko pierwszą klamrę na początku).
+; Stały identyfikator programu – NIE ZMIENIAĆ (inaczej aktualizacje przestaną działać)
 AppId={{6DCABD0D-3D80-4A72-8AAE-CB3B0F2A0189}
 
 AppName=mkEdytor
@@ -16,7 +18,7 @@ DefaultDirName={autopf}\mkEdytor
 DefaultGroupName=mkEdytor
 PrivilegesRequired=admin
 
-; Plik licencji, który przygotowaliśmy
+; Plik licencji
 LicenseFile=Licencja.txt
 
 ; Ikony instalatora i deinstalatora
@@ -41,13 +43,10 @@ ChangesAssociations=yes
 Name: "pl"; MessagesFile: "compiler:Languages\Polish.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkablealone
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-; Główny plik wykonywalny pobierany z podkatalogu dist/mkEdytor
-Source: "dist\mkEdytor\mkEdytor.exe"; DestDir: "{app}"; Flags: ignoreversion
-
-; Kopiuje całą resztę z folderu dist/mkEdytor (w tym folder _internal ze wszystkimi plikami)
+; Cała zawartość folderu dist\mkEdytor (mkEdytor.exe + folder _internal)
 Source: "dist\mkEdytor\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Dodatkowe pliki leżące obok skryptu .iss
@@ -60,14 +59,62 @@ Name: "{autoprograms}\mkEdytor"; Filename: "{app}\mkEdytor.exe"; IconFilename: "
 Name: "{autodesktop}\mkEdytor"; Filename: "{app}\mkEdytor.exe"; IconFilename: "{app}\ikona.ico"; Tasks: desktopicon
 
 [Registry]
-; --- Skojarzenie plików .txt z programem mkEdytor ---
-Root: HKA; Subkey: "Software\Classes\.txt\OpenWithProgids"; ValueType: string; ValueName: "mkEdytor.txt"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\mkEdytor.txt"; ValueType: string; ValueName: ""; ValueData: "Plik tekstowy mkEdytor"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\mkEdytor.txt\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\ikona.ico,0"
-Root: HKA; Subkey: "Software\Classes\mkEdytor.txt\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\mkEdytor.exe"" ""%1"""
+; --- mkEdytor jako domyślny program dla plików .mked ---
+; Typ pliku (ProgID): nazwa, ikona i polecenie otwierania
+Root: HKA; Subkey: "Software\Classes\mkEdytor.dokument"; ValueType: string; ValueName: ""; ValueData: "Dokument mkEdytor"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\mkEdytor.dokument\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: """{app}\mkEdytor.exe"",0"
+Root: HKA; Subkey: "Software\Classes\mkEdytor.dokument\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\mkEdytor.exe"" ""%1"""
 
-; --- Skojarzenie plików .html z programem mkEdytor ---
-Root: HKA; Subkey: "Software\Classes\.html\OpenWithProgids"; ValueType: string; ValueName: "mkEdytor.html"; ValueData: ""; Flags: uninsdeletevalue
-Root: HKA; Subkey: "Software\Classes\mkEdytor.html"; ValueType: string; ValueName: ""; ValueData: "Dokument HTML mkEdytor"; Flags: uninsdeletekey
-Root: HKA; Subkey: "Software\Classes\mkEdytor.html\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\ikona.ico,0"
-Root: HKA; Subkey: "Software\Classes\mkEdytor.html\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\mkEdytor.exe"" ""%1"""
+; Rozszerzenie .mked wskazuje na typ pliku mkEdytor.dokument
+Root: HKA; Subkey: "Software\Classes\.mked"; ValueType: string; ValueName: ""; ValueData: "mkEdytor.dokument"; Flags: uninsdeletevalue uninsdeletekeyifempty
+Root: HKA; Subkey: "Software\Classes\.mked\OpenWithProgids"; ValueType: string; ValueName: "mkEdytor.dokument"; ValueData: ""; Flags: uninsdeletevalue uninsdeletekeyifempty
+
+; Program na liście „Otwórz za pomocą”
+Root: HKA; Subkey: "Software\Classes\Applications\mkEdytor.exe"; ValueType: string; ValueName: "FriendlyAppName"; ValueData: "mkEdytor"; Flags: uninsdeletekey
+Root: HKA; Subkey: "Software\Classes\Applications\mkEdytor.exe\SupportedTypes"; ValueType: string; ValueName: ".mked"; ValueData: ""
+Root: HKA; Subkey: "Software\Classes\Applications\mkEdytor.exe\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\mkEdytor.exe"" ""%1"""
+
+; Program na liście „Aplikacje domyślne” w Ustawieniach Windows (64-bitowy widok rejestru)
+Root: HKLM64; Subkey: "Software\mkEdytor\Capabilities"; ValueType: string; ValueName: "ApplicationName"; ValueData: "mkEdytor"; Flags: uninsdeletekey; Check: IsWin64
+Root: HKLM64; Subkey: "Software\mkEdytor\Capabilities"; ValueType: string; ValueName: "ApplicationDescription"; ValueData: "Prosty edytor tekstu dla dzieci"; Check: IsWin64
+Root: HKLM64; Subkey: "Software\mkEdytor\Capabilities\FileAssociations"; ValueType: string; ValueName: ".mked"; ValueData: "mkEdytor.dokument"; Check: IsWin64
+Root: HKLM64; Subkey: "Software\RegisteredApplications"; ValueType: string; ValueName: "mkEdytor"; ValueData: "Software\mkEdytor\Capabilities"; Flags: uninsdeletevalue; Check: IsWin64
+
+[Code]
+const
+  KLUCZ_WYBORU = 'Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.mked';
+
+{ Sprzątanie po wersjach 1.x, które kojarzyły mkEdytor z plikami .txt i .html }
+procedure UsunSkojarzeniaZWersji1;
+begin
+  RegDeleteValue(HKLM, 'Software\Classes\.txt\OpenWithProgids', 'mkEdytor.txt');
+  RegDeleteValue(HKLM, 'Software\Classes\.html\OpenWithProgids', 'mkEdytor.html');
+  RegDeleteKeyIncludingSubkeys(HKLM, 'Software\Classes\mkEdytor.txt');
+  RegDeleteKeyIncludingSubkeys(HKLM, 'Software\Classes\mkEdytor.html');
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    UsunSkojarzeniaZWersji1;
+    { Wcześniejszy wybór „Otwórz za pomocą → Zawsze” dla .mked ma pierwszeństwo
+      przed rejestracją programu – usuwamy go (dotyczy użytkownika uruchamiającego instalator). }
+    RegDeleteKeyIncludingSubkeys(HKCU, KLUCZ_WYBORU);
+  end;
+end;
+
+{ Przy deinstalacji usuwamy też skojarzenie zapisane przez sam program
+  (opcja „Otwieraj pliki .mked w mkEdytorze”) dla bieżącego użytkownika. }
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+var
+  Wartosc: String;
+begin
+  if CurUninstallStep = usPostUninstall then
+  begin
+    RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\mkEdytor.dokument');
+    if RegQueryStringValue(HKCU, 'Software\Classes\.mked', '', Wartosc) and (Wartosc = 'mkEdytor.dokument') then
+      RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\.mked');
+    RegDeleteKeyIncludingSubkeys(HKCU, KLUCZ_WYBORU);
+  end;
+end;

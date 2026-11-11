@@ -1,9 +1,53 @@
 # Changelog (Historia zmian)
 
+## [2.0.1.1]
+
+### Zmieniono
+- Nowy, niezapisany dokument nazywa się teraz „Bez nazwy” – w tytule okna (zamiast „Nowy dokument”) oraz jako proponowana nazwa pliku przy zapisie i eksporcie (zamiast „dokument”), np. `Bez nazwy.mked`.
+
+## [2.0.1.0]
+
+### Dodano
+- **Sprawdzanie skojarzenia przy starcie:** jeśli pliki `.mked` nie otwierają się w mkEdytorze (np. wcześniej wybrano inny program w oknie „Otwórz za pomocą”), program proponuje naprawę: *Tak* / *Nie teraz* / *Nie pytaj więcej*. Skojarzenie zapisywane jest dla bieżącego użytkownika i nie wymaga uprawnień administratora. To samo można zrobić ręcznie: *Plik → Otwieraj pliki .mked w mkEdytorze*.
+- Instalator rejestruje mkEdytor na liście „Otwórz za pomocą” oraz w Ustawieniach Windows → *Aplikacje domyślne*, usuwa wcześniejszy wybór innego programu dla `.mked`, a deinstalator sprząta skojarzenie zapisane przez program.
+
+### Zmieniono
+- Sprzątanie skojarzeń z `.txt` i `.html` po wersjach 1.x przeniesiono do sekcji `[Code]` instalatora – w sekcji `[Registry]` pozostały wyłącznie wpisy dla `.mked`.
+- Ikona plików `.mked` jest pobierana bezpośrednio z `mkEdytor.exe`.
+
+### Poprawiono
+- Pliki `.mked` nie otwierały się w mkEdytorze, jeśli wcześniej wybrano dla nich inny program („Otwórz za pomocą → Zawsze”).
+
+## [2.0.0.0]
+
+> **Wersja przełomowa:** dokumenty są zapisywane w nowym, własnym formacie `.mked`. Pliki z wersji 1.x (`.html`, `.txt`) można zaimportować.
+
+### Dodano
+- **Własny format dokumentów `.mked`:** plik tekstowy UTF-8 w formacie JSON, zawierający treść z pełnym formatowaniem oraz numer wersji formatu (przygotowanie pod przyszłe rozszerzenia).
+- **Eksport do HTML:** nowe polecenie *Plik → Wyeksportuj do HTML (strona internetowa)*. Eksport nie zmienia otwartego dokumentu.
+- **Import starszych plików:** pliki `.html`, `.htm` i `.txt` otwierają się jako import (w tytule okna „(zaimportowany)”). Oryginał nie jest nadpisywany – *Zapisz* proponuje zapis jako nowy dokument `.mked` o tej samej nazwie.
+- **Otwieranie dwuklikiem:** program odczytuje ścieżkę pliku przekazaną przez system, a instalator rejestruje mkEdytor jako domyślny program dla plików `.mked` (z ikoną programu).
+- Czytelne komunikaty przy próbie otwarcia uszkodzonego pliku lub dokumentu utworzonego w nowszej wersji programu.
+
+### Zmieniono
+- Usunięto możliwość zapisu do `.txt` i `.html` – *Zapisz* / *Zapisz jako* zapisują wyłącznie `.mked` (eliminuje to ciche gubienie formatowania przy zapisie do zwykłego tekstu).
+- Instalator usuwa skojarzenia z plikami `.txt` i `.html` pozostawione przez wersje 1.x.
+- Tytuł okna pokazuje samą nazwę pliku zamiast pełnej ścieżki.
+- Okna zapisu i eksportu proponują nazwę pliku na podstawie bieżącego dokumentu i automatycznie dopisują brakujące rozszerzenie (`.mked`, `.odt`, `.html`, `.pdf`).
+- Numer wersji w instalatorze jest odczytywany automatycznie z pliku `mkEdytor.exe`.
+
+### Poprawiono
+- Program pokazywał w tytule okna nieaktualny numer wersji (1.0.2.0 zamiast 1.0.2.1).
+- Dwuklik na skojarzonym pliku otwierał pusty edytor zamiast wskazanego dokumentu.
+- Po nieudanym zapisie nie pozostaje już plik tymczasowy `.tmp`.
+- Po nieudanym *Zapisz jako* program nie przypisuje już dokumentu do pliku, który nie został zapisany.
+- Eksport do ODT nie działał, gdy nazwa pliku nie miała rozszerzenia.
+- Instalator: usunięto podwójne kopiowanie `mkEdytor.exe` i zbędną flagę zadania „Ikona na pulpicie”.
+
 ## [1.0.2.1]
 
 ### Zmieniono
-- ZMieniono ikonę na bardziej nowoczesną.
+- Zmieniono ikonę na bardziej nowoczesną.
 
 ## [1.0.2.0]
 
