@@ -1,5 +1,13 @@
 # Changelog (Historia zmian)
 
+## [2.0.2.0]
+
+### Zmieniono
+- Instalator odczytuje numer wersji bezpośrednio z pliku `wersja.txt` (wcześniej z gotowego `mkEdytor.exe`). Numer wersji ustawia się w dwóch miejscach: w `wersja.txt` i w stałej `WERSJA` w `mkEdytor.py`. Jeśli numeru nie da się odczytać, kompilacja instalatora zatrzymuje się z komunikatem błędu.
+
+### Poprawiono
+- Okno wyboru koloru otwierało się z zaznaczonym kolorem białym – kliknięcie „OK” bez wyboru sprawiało, że dalszy tekst był niewidoczny na białym tle. Teraz okno startuje z bieżącym kolorem tekstu, ma polski tytuł „Wybierz kolor tekstu” i jest powiązane z oknem programu.
+
 ## [2.0.1.1]
 
 ### Zmieniono

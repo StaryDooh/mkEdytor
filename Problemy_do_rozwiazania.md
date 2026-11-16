@@ -9,6 +9,8 @@ Przegląd: 2026-11-11.
 > z wersji 1.x są usuwane przez instalator. Wersję w instalatorze odczytuje się z `mkEdytor.exe`.
 > W pkt 10 dodano już automatyczne dopisywanie rozszerzenia przy eksporcie (ODT działa bez rozszerzenia);
 > sprawdzanie sukcesu eksportu PDF pozostaje do zrobienia.
+>
+> **Stan w wersji 2.0.2.0:** wszystkie błędy poważne (pkt 1–5) są rozwiązane.
 
 Legenda: 🔴 poważne · 🟠 błędy logiczne / usterki · 🟡 interfejs dla klas 1–3 · 🔵 nadmiarowy kod · ⚙️ budowanie i instalator · ⚖️ licencja
 
@@ -27,7 +29,7 @@ if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):
 okno.showMaximized()
 ```
 
-### [ ] 2. Okno wyboru koloru startuje z kolorem białym (linia 337)
+### [x] 2. Okno wyboru koloru startuje z kolorem białym (linia 337)
 `QColorDialog.getColor()` bez argumentów ma domyślnie kolor `Qt.white`. Dziecko kliknie „OK” bez wyboru i dalej pisze niewidocznym białym tekstem na białym tle. Okno nie ma też rodzica.
 
 **Poprawka:**
@@ -49,6 +51,8 @@ Program rejestruje się dla wszystkich plików `.html`. `QTextEdit` obsługuje t
 W kodzie `WERSJA = "1.0.2.0"`, w `wersja.txt` i `.iss` – `1.0.2.1`. Tytuł okna pokazuje złą wersję.
 
 **Poprawka:** trzymać numer w jednym miejscu (np. `wersja.py`), z którego czyta program, a pozostałe pliki generować skryptem.
+
+**Rozwiązanie (2.0.2.0):** numer wersji jest w `mkEdytor.py` (stała `WERSJA`) i w `wersja.txt`; instalator odczytuje go z `wersja.txt`. Rozwiązanie przyjęte jako docelowe.
 
 ---
 
@@ -180,7 +184,7 @@ Komputery w pracowni bywają wyłączane z listwy na koniec lekcji.
 ## Kolejność prac
 
 1. [x] Obsługa `sys.argv` (pkt 1)
-2. [ ] Kolor startowy w oknie kolorów (pkt 2)
+2. [x] Kolor startowy w oknie kolorów (pkt 2)
 3. [x] ~~Ostrzeżenie przed~~ (zbędne – brak zapisu do .txt) utratą formatowania przy zapisie do .txt (pkt 3)
 4. [ ] Polskie tłumaczenia Qt (pkt 14)
 5. [ ] Skrót Ctrl+Shift+S (pkt 6)

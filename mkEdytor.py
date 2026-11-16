@@ -117,7 +117,7 @@ def skojarz_mked_dla_uzytkownika():
 class NowoczesnyEdytor(QMainWindow):
 
     # Wersja jako stała klasy
-    WERSJA = "2.0.1.1"
+    WERSJA = "2.0.2.0"
     NAZWA_DOMYSLNA = "Bez nazwy"   # nazwa nowego, niezapisanego dokumentu
 
     def __init__(self):
@@ -460,7 +460,8 @@ class NowoczesnyEdytor(QMainWindow):
         self.edytor.setFocus()
 
     def wybierz_kolor(self):
-        kolor = QColorDialog.getColor()
+        # Start z bieżącym kolorem tekstu (domyślnie byłby biały – niewidoczny na białym tle)
+        kolor = QColorDialog.getColor(self.edytor.textColor(), self, "Wybierz kolor tekstu")
         if kolor.isValid():
             fmt = QTextCharFormat()
             fmt.setForeground(kolor)

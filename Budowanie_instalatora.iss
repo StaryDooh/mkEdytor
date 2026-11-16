@@ -1,8 +1,40 @@
-; Wersja jest odczytywana z gotowego mkEdytor.exe (z wersja.txt wbudowanego przez PyInstaller),
-; więc nie trzeba jej już wpisywać ręcznie w tym pliku.
-; Najpierw uruchom Budowanie_EXE.bat, dopiero potem kompiluj ten skrypt.
-#define MyAppExe "dist\mkEdytor\mkEdytor.exe"
-#define MyAppVersion GetVersionNumbersString(AddBackslash(SourcePath) + MyAppExe)
+; Numer wersji jest odczytywany z pliku wersja.txt (ten sam plik PyInstaller wbudowuje w mkEdytor.exe).
+; Numer wersji zmieniasz w dwóch miejscach: w wersja.txt oraz w stałej WERSJA w mkEdytor.py.
+
+#define PlikWersji AddBackslash(SourcePath) + "wersja.txt"
+#define Znacznik "u'FileVersion', u'"
+#define MyAppVersion ""
+#define UchwytPliku 0
+#define Reszta ""
+
+#if !FileExists(PlikWersji)
+  #error Nie znaleziono pliku wersja.txt obok skryptu .iss
+#endif
+
+; Szuka linii: StringStruct(u'FileVersion', u'X.X.X.X') i wycina z niej numer wersji.
+; UWAGA: #define wewnątrz #sub tworzy zmienną LOKALNĄ – dlatego zmienne globalne
+; (Reszta, MyAppVersion) zmieniamy przypisaniem w #expr.
+#sub SzukajWersji
+  #define Linia FileRead(UchwytPliku)
+  #if Len(MyAppVersion) == 0
+    #if Pos(Znacznik, Linia) > 0
+      #expr Reszta = Copy(Linia, Pos(Znacznik, Linia) + Len(Znacznik), 100)
+      #expr MyAppVersion = Copy(Reszta, 1, Pos("'", Reszta) - 1)
+    #endif
+  #endif
+#endsub
+
+#expr UchwytPliku = FileOpen(PlikWersji)
+#if UchwytPliku == 0
+  #error Nie mozna otworzyc pliku wersja.txt
+#endif
+#for {0; !FileEof(UchwytPliku); 0} SzukajWersji
+#expr FileClose(UchwytPliku)
+
+#if Len(MyAppVersion) == 0
+  #error Nie znaleziono numeru wersji (FileVersion) w pliku wersja.txt
+#endif
+#pragma message "Wersja mkEdytora (z wersja.txt): " + MyAppVersion
 
 
 [Setup]
