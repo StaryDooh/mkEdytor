@@ -6,7 +6,8 @@ from PyQt6.QtWidgets import (QApplication, QMainWindow, QTextEdit, QToolBar,
                              QMessageBox)
 from PyQt6.QtGui import (QFont, QAction, QFontDatabase, QTextListFormat,
                          QKeySequence, QIcon, QTextDocumentWriter, QPdfWriter,
-                         QPageSize, QDesktopServices, QTextCharFormat)
+                         QPageSize, QDesktopServices, QTextCharFormat,
+                         QTextBlockFormat)
 from PyQt6.QtCore import Qt, QUrl, QStandardPaths, QSettings, QTimer
 from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 
@@ -117,8 +118,10 @@ def skojarz_mked_dla_uzytkownika():
 class NowoczesnyEdytor(QMainWindow):
 
     # Wersja jako stała klasy
-    WERSJA = "2.0.2.0"
+    WERSJA = "2.0.7.0"
     NAZWA_DOMYSLNA = "Bez nazwy"   # nazwa nowego, niezapisanego dokumentu
+    CZCIONKA_DOMYSLNA = "Arial"    # krój i rozmiar tekstu w nowym dokumencie
+    ROZMIAR_DOMYSLNY = 18
 
     def __init__(self):
         super().__init__()
@@ -133,11 +136,8 @@ class NowoczesnyEdytor(QMainWindow):
         self.aktualny_plik = None      # ścieżka do pliku .mked (lub None)
         self.nazwa_importu = None      # nazwa zaimportowanego pliku .html/.txt (lub None)
 
-        # Flaga śledzenia niezapisanych zmian
-        self.zmodyfikowany = False
-
         self.edytor = QTextEdit()
-        domyslna_czcionka = QFont("Arial", 18)
+        domyslna_czcionka = QFont(self.CZCIONKA_DOMYSLNA, self.ROZMIAR_DOMYSLNY)
         self.edytor.setFont(domyslna_czcionka)
         self.edytor.setStyleSheet("QTextEdit { padding: 20px; border: none; }")
         self.setCentralWidget(self.edytor)
@@ -146,7 +146,9 @@ class NowoczesnyEdytor(QMainWindow):
         self.stworz_pasek_narzedzi()
 
         self.edytor.textChanged.connect(self.utrzymaj_formatowanie)
-        self.edytor.textChanged.connect(self._oznacz_jako_zmodyfikowany)
+        # Niezapisane zmiany śledzi sam dokument Qt – cofnięcie (Ctrl+Z) do stanu
+        # z ostatniego zapisu z powrotem oznacza dokument jako niezmieniony.
+        self.edytor.document().modificationChanged.connect(self._aktualizuj_tytul)
         self.edytor.cursorPositionChanged.connect(self.aktualizuj_stan_narzedzi)
         self.edytor.currentCharFormatChanged.connect(self.aktualizuj_stan_narzedzi)
 
@@ -170,12 +172,17 @@ class NowoczesnyEdytor(QMainWindow):
         else:
             return "ANULUJ"
 
-    def _oznacz_jako_zmodyfikowany(self):
-        if not self.zmodyfikowany:
-            self.zmodyfikowany = True
-            self._aktualizuj_tytul()
+    @property
+    def zmodyfikowany(self):
+        """Czy dokument ma niezapisane zmiany (stan prowadzony przez QTextDocument)."""
+        return self.edytor.document().isModified()
 
-    def _aktualizuj_tytul(self):
+    def _oznacz_jako_zapisany(self):
+        """Bieżący stan dokumentu staje się punktem odniesienia dla „niezapisanych zmian”."""
+        self.edytor.document().setModified(False)
+        self._aktualizuj_tytul()
+
+    def _aktualizuj_tytul(self, *_):
         if self.aktualny_plik:
             nazwa = os.path.basename(self.aktualny_plik)
         elif self.nazwa_importu:
@@ -239,7 +246,8 @@ class NowoczesnyEdytor(QMainWindow):
         menu_plik.addAction(akcja_zapisz)
 
         akcja_zapisz_jako = QAction("Zapisz jako...", self)
-        akcja_zapisz_jako.setShortcut(QKeySequence.StandardKey.SaveAs)
+        # StandardKey.SaveAs jest na Windows puste – skrót ustawiamy jawnie
+        akcja_zapisz_jako.setShortcut(QKeySequence("Ctrl+Shift+S"))
         akcja_zapisz_jako.triggered.connect(self.zapisz_jako)
         menu_plik.addAction(akcja_zapisz_jako)
 
@@ -352,13 +360,13 @@ class NowoczesnyEdytor(QMainWindow):
 
         self.lista_czcionek = QComboBox()
         self.lista_czcionek.addItems(QFontDatabase.families())
-        self.lista_czcionek.setCurrentText("Arial")
+        self.lista_czcionek.setCurrentText(self.CZCIONKA_DOMYSLNA)
         self.lista_czcionek.currentTextChanged.connect(self.zmien_czcionke)
         pasek.addWidget(self.lista_czcionek)
 
         self.rozmiar_czcionki = QSpinBox()
         self.rozmiar_czcionki.setRange(8, 72)
-        self.rozmiar_czcionki.setValue(18)
+        self.rozmiar_czcionki.setValue(self.ROZMIAR_DOMYSLNY)
         self.rozmiar_czcionki.valueChanged.connect(self.zmien_rozmiar)
         pasek.addWidget(self.rozmiar_czcionki)
 
@@ -511,11 +519,33 @@ class NowoczesnyEdytor(QMainWindow):
                 return
 
         self.edytor.clear()
-        self.utrzymaj_formatowanie()
+        self._przywroc_domyslne_formatowanie()
         self.aktualny_plik = None
         self.nazwa_importu = None
-        self.zmodyfikowany = False
-        self._aktualizuj_tytul()
+        self._oznacz_jako_zapisany()
+
+    def _przywroc_domyslne_formatowanie(self):
+        """Nowy dokument zaczyna się od ustawień startowych: Arial 18, czarny,
+        bez pogrubienia/pochylenia/podkreślenia, wyrównanie do lewej, bez listy."""
+        # Pasek narzędzi – bez sygnałów, żeby nie formatować pustego dokumentu dwa razy
+        self.lista_czcionek.blockSignals(True)
+        self.rozmiar_czcionki.blockSignals(True)
+        self.lista_czcionek.setCurrentText(self.CZCIONKA_DOMYSLNA)
+        self.rozmiar_czcionki.setValue(self.ROZMIAR_DOMYSLNY)
+        self.lista_czcionek.blockSignals(False)
+        self.rozmiar_czcionki.blockSignals(False)
+
+        kursor = self.edytor.textCursor()
+        kursor.setBlockFormat(QTextBlockFormat())   # akapit: do lewej, bez wcięć i listy
+        kursor.setBlockCharFormat(QTextCharFormat())
+        self.edytor.setTextCursor(kursor)
+        self.edytor.setCurrentCharFormat(QTextCharFormat())  # znaki: domyślne
+        self.edytor.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.utrzymaj_formatowanie()                 # krój i rozmiar z paska
+
+        # Te zmiany nie powinny dać się „cofnąć” w nowym dokumencie
+        self.edytor.document().clearUndoRedoStacks()
+        self.aktualizuj_stan_narzedzi()
 
     def otworz_plik(self):
         if self.zmodyfikowany:
@@ -566,8 +596,7 @@ class NowoczesnyEdytor(QMainWindow):
             self.aktualny_plik = None
             self.nazwa_importu = os.path.basename(sciezka)
 
-        self.zmodyfikowany = False
-        self._aktualizuj_tytul()
+        self._oznacz_jako_zapisany()
         return True
 
     def _czytaj_mked(self, sciezka):
@@ -605,42 +634,59 @@ class NowoczesnyEdytor(QMainWindow):
             )
         return dane["tresc"]
 
+    # Maksymalny rozmiar importowanego pliku .txt/.html (większe zamroziłyby edytor)
+    MAKS_ROZMIAR_IMPORTU = 10 * 1024 * 1024  # 10 MB
+
     def _czytaj_plik(self, sciezka):
-        # Lista popularnych kodowań (od najczęstszych po regionalne)
-        kodowania = ["utf-8-sig", "utf-8", "windows-1250", "iso-8859-2", "cp1252"]
+        """Wczytuje starszy plik .txt / .html do importu.
 
-        for kodowanie in kodowania:
-            try:
-                with open(sciezka, "r", encoding=kodowanie) as plik:
-                    zawartosc = plik.read()
-                    
-                    # Ostrzegamy użytkownika, jeśli użyto kodowania innego niż warianty UTF-8
-                    if kodowanie not in ["utf-8", "utf-8-sig"]:
-                        QMessageBox.information(
-                            self, "Informacja o kodowaniu",
-                            f"Plik został pomyślnie wczytany z użyciem kodowania: {kodowanie}.\n\n"
-                            "Podczas ewentualnego zapisu z poziomu programu, plik zostanie zachowany jako standardowy UTF-8."
-                        )
-                    return zawartosc
-            except UnicodeDecodeError:
-                continue
-            except Exception as e:
-                QMessageBox.critical(self, "Błąd", f"Nie udało się otworzyć pliku:\n{e}")
-                return None
-
-        # Awaryjne wczytywanie, jeśli żadne znane kodowanie z listy nie podołało (podmieniamy nieznane znaki)
+        Rozpoznawane kodowania:
+        - UTF-16 (z BOM) – „Unicode” z Notatnika,
+        - UTF-8 (z BOM i bez),
+        - Windows-1250 – starsze polskie pliki z Windows.
+        Windows-1250 ma 5 nieprzypisanych bajtów, więc bardzo rzadko może się nie udać –
+        wtedy nieznane znaki są zastępowane znakiem „�” i pojawia się ostrzeżenie.
+        """
         try:
-            with open(sciezka, "r", encoding="utf-8", errors="replace") as plik:
-                zawartosc = plik.read()
-            QMessageBox.warning(
-                self, "Ostrzeżenie kodowania",
-                "Plik zawiera znaki niemożliwe do prawidłowego zdekodowania przez program.\n"
-                "Nieznane znaki zostały zastąpione znakiem '?'."
-            )
-            return zawartosc
-        except Exception as e:
+            if os.path.getsize(sciezka) > self.MAKS_ROZMIAR_IMPORTU:
+                QMessageBox.critical(
+                    self, "Plik jest za duży",
+                    "Ten plik jest za duży, żeby otworzyć go w mkEdytorze (ponad 10 MB).")
+                return None
+            with open(sciezka, "rb") as plik:
+                dane = plik.read()
+        except OSError as e:
             QMessageBox.critical(self, "Błąd", f"Nie udało się otworzyć pliku:\n{e}")
             return None
+
+        # UTF-16 trzeba rozpoznać przed sprawdzaniem bajtów zerowych (zawiera ich mnóstwo)
+        if dane.startswith((b"\xff\xfe", b"\xfe\xff")):
+            try:
+                return dane.decode("utf-16")
+            except UnicodeDecodeError:
+                pass
+
+        # Bajty zerowe nie występują w plikach tekstowych – to np. .docx, .exe, obrazek
+        if b"\x00" in dane:
+            QMessageBox.critical(
+                self, "To nie jest plik tekstowy",
+                "Tego pliku nie da się otworzyć w mkEdytorze.\n"
+                "Można otwierać dokumenty mkEdytora (.mked) oraz pliki tekstowe (.txt, .html).")
+            return None
+
+        try:
+            return dane.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            pass
+
+        try:
+            return dane.decode("windows-1250")
+        except UnicodeDecodeError:
+            QMessageBox.warning(
+                self, "Ostrzeżenie kodowania",
+                "Niektórych znaków w tym pliku nie udało się odczytać.\n"
+                "Zostały zastąpione znakiem „�”.")
+            return dane.decode("windows-1250", errors="replace")
 
     def zapisz_plik(self):
         if self.aktualny_plik:
@@ -673,8 +719,7 @@ class NowoczesnyEdytor(QMainWindow):
         }
         tresc = json.dumps(dane, ensure_ascii=False, indent=1)
         if self._zapisz_atomowo(sciezka, tresc):
-            self.zmodyfikowany = False
-            self._aktualizuj_tytul()
+            self._oznacz_jako_zapisany()
             return True
         return False
 
@@ -703,40 +748,73 @@ class NowoczesnyEdytor(QMainWindow):
         if okno_druku.exec():
             self.edytor.document().print(drukarka)
 
+    def _eksportuj(self, sciezka, zapisz, nazwa_formatu):
+        """Wspólna obsługa eksportu (ODT, PDF).
+
+        Eksport trafia najpierw do pliku tymczasowego. Dopiero gdy ten plik istnieje
+        i nie jest pusty, zastępuje plik docelowy. Dzięki temu:
+        - komunikat „Sukces” pojawia się tylko po faktycznym zapisie,
+        - błąd wychodzi na jaw także wtedy, gdy stary plik o tej nazwie istnieje,
+          ale jest zablokowany (np. otwarty w przeglądarce PDF).
+        """
+        tmp = sciezka + ".tmp"
+        try:
+            udalo_sie = zapisz(tmp)
+            if udalo_sie and os.path.isfile(tmp) and os.path.getsize(tmp) > 0:
+                os.replace(tmp, sciezka)
+                QMessageBox.information(self, "Sukces", f"Pomyślnie wyeksportowano plik {nazwa_formatu}.")
+                return True
+        except Exception:
+            pass
+
+        try:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+        except OSError:
+            pass
+        QMessageBox.critical(
+            self, "Błąd eksportu",
+            f"Nie udało się zapisać pliku {nazwa_formatu}.\n\n"
+            "Jeśli ten plik jest otwarty w innym programie, zamknij go i spróbuj ponownie.\n"
+            "Sprawdź też, czy masz uprawnienia do zapisu w wybranym folderze."
+        )
+        return False
+
     def eksportuj_odt(self):
         sciezka, _ = QFileDialog.getSaveFileName(
             self, "Eksportuj do ODT", self._domyslna_sciezka(".odt"),
             "Plik LibreOffice Writer (*.odt)"
         )
-        if sciezka:
-            sciezka = self._z_rozszerzeniem(sciezka, ".odt")
-            try:
-                writer = QTextDocumentWriter(sciezka)
-                if writer.write(self.edytor.document()):
-                    QMessageBox.information(self, "Sukces", "Pomyślnie wyeksportowano plik ODT.")
-                else:
-                    QMessageBox.critical(
-                        self, "Błąd eksportu",
-                        "Nie udało się zapisać pliku ODT.\n"
-                        "Sprawdź, czy masz uprawnienia do zapisu w wybranej lokalizacji."
-                    )
-            except Exception as e:
-                QMessageBox.critical(self, "Błąd", f"Błąd eksportu ODT:\n{e}")
+        if not sciezka:
+            return
+        sciezka = self._z_rozszerzeniem(sciezka, ".odt")
+
+        def zapisz(plik):
+            writer = QTextDocumentWriter(plik)
+            writer.setFormat(b"odf")  # format jawnie – nie zależy od rozszerzenia pliku
+            wynik = writer.write(self.edytor.document())
+            del writer  # zamknięcie pliku przed sprawdzeniem rozmiaru
+            return wynik
+
+        self._eksportuj(sciezka, zapisz, "ODT")
 
     def eksportuj_pdf(self):
         sciezka, _ = QFileDialog.getSaveFileName(
             self, "Eksportuj do PDF", self._domyslna_sciezka(".pdf"),
             "Pliki PDF (*.pdf)"
         )
-        if sciezka:
-            sciezka = self._z_rozszerzeniem(sciezka, ".pdf")
-            try:
-                pdf_writer = QPdfWriter(sciezka)
-                pdf_writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
-                self.edytor.document().print(pdf_writer)
-                QMessageBox.information(self, "Sukces", "Pomyślnie wyeksportowano plik PDF.")
-            except Exception as e:
-                QMessageBox.critical(self, "Błąd", f"Błąd eksportu PDF:\n{e}")
+        if not sciezka:
+            return
+        sciezka = self._z_rozszerzeniem(sciezka, ".pdf")
+
+        def zapisz(plik):
+            pdf_writer = QPdfWriter(plik)
+            pdf_writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+            self.edytor.document().print(pdf_writer)
+            del pdf_writer  # zamknięcie pliku przed sprawdzeniem rozmiaru
+            return True  # QPdfWriter nie zgłasza błędów – o sukcesie decyduje rozmiar pliku
+
+        self._eksportuj(sciezka, zapisz, "PDF")
 
     def sprawdz_skojarzenie(self, na_zadanie=False):
         """Sprawdza, czy pliki .mked otwierają się w mkEdytorze, i proponuje naprawę.

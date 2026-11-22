@@ -1,5 +1,38 @@
 # Changelog (Historia zmian)
 
+## [2.0.7.0]
+
+### Poprawiono
+- Cofnięcie zmian (Ctrl+Z) do stanu z ostatniego zapisu nie usuwało gwiazdki `*` z tytułu okna i program dalej pytał o zapis. Niezapisane zmiany śledzi teraz wbudowany mechanizm Qt (`QTextDocument.isModified()` i sygnał `modificationChanged`), który uwzględnia cofanie i ponawianie.
+
+### Zmieniono
+- Usunięto własną flagę `zmodyfikowany` i metodę `_oznacz_jako_zmodyfikowany` – zastąpiła je właściwość tylko do odczytu oraz metoda `_oznacz_jako_zapisany()`.
+
+## [2.0.6.0]
+
+### Poprawiono
+- Polecenie *Plik → Nowy* nie zerowało formatowania – kolor, pogrubienie, pochylenie, podkreślenie i wybrana czcionka przechodziły z poprzedniego dokumentu. Nowy dokument zaczyna się teraz od ustawień startowych: Arial 18, czarny tekst, bez wyróżnień, wyrównanie do lewej, bez listy. Pasek narzędzi pokazuje te ustawienia, a zmiany tych ustawień nie trafiają do historii cofania.
+
+## [2.0.5.0]
+
+### Poprawiono
+- Eksport do PDF zawsze pokazywał komunikat „Sukces”, nawet gdy zapis się nie udał (np. plik był otwarty w przeglądarce PDF). Teraz eksport do PDF i ODT trafia najpierw do pliku tymczasowego, a sukces jest zgłaszany dopiero po sprawdzeniu, że plik powstał, nie jest pusty i zastąpił plik docelowy. W razie błędu pojawia się podpowiedź, by zamknąć plik w innym programie.
+- Eksport do ODT ma jawnie ustawiony format (`odf`), niezależnie od rozszerzenia pliku.
+- Po nieudanym eksporcie nie pozostaje plik tymczasowy.
+
+## [2.0.4.0]
+
+### Poprawiono
+- Import plików `.txt` / `.html`: uporządkowano rozpoznawanie kodowania. Usunięto martwy kod (zbędne `utf-8` po `utf-8-sig`, `iso-8859-2` „pochłaniające” każdy plik, przez co `cp1252` i blok awaryjny nigdy się nie wykonywały). Obsługiwane są teraz: UTF-16 („Unicode” z Notatnika), UTF-8 (z BOM i bez) oraz Windows-1250.
+- Próba otwarcia pliku, który nie jest tekstem (np. `.docx`, `.exe`, obrazek), kończy się czytelnym komunikatem zamiast wyświetlenia „krzaków”.
+- Pliki większe niż 10 MB nie są wczytywane (zamroziłyby edytor) – pojawia się komunikat.
+- Usunięto zbędny komunikat o kodowaniu przy imporcie starszych polskich plików z Windows (Windows-1250).
+
+## [2.0.3.0]
+
+### Poprawiono
+- Skrót klawiszowy **Ctrl+Shift+S** („Zapisz jako…”) nie działał na Windows – standardowy skrót Qt dla „Zapisz jako” jest w tym systemie pusty. Skrót jest teraz ustawiony jawnie.
+
 ## [2.0.2.0]
 
 ### Zmieniono

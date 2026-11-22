@@ -8,7 +8,7 @@ Przegląd: 2026-11-11.
 > (oryginał nie jest nadpisywany). mkEdytor jest domyślnym programem dla `.mked`; skojarzenia z .txt/.html
 > z wersji 1.x są usuwane przez instalator. Wersję w instalatorze odczytuje się z `mkEdytor.exe`.
 > W pkt 10 dodano już automatyczne dopisywanie rozszerzenia przy eksporcie (ODT działa bez rozszerzenia);
-> sprawdzanie sukcesu eksportu PDF pozostaje do zrobienia.
+> sprawdzanie sukcesu eksportu PDF rozwiązane w wersji 2.0.5.0.
 >
 > **Stan w wersji 2.0.2.0:** wszystkie błędy poważne (pkt 1–5) są rozwiązane.
 
@@ -58,12 +58,12 @@ W kodzie `WERSJA = "1.0.2.0"`, w `wersja.txt` i `.iss` – `1.0.2.1`. Tytuł okn
 
 ## 🟠 Błędy logiczne i drobniejsze usterki
 
-### [ ] 6. Skrót „Zapisz jako” nie działa na Windows
+### [x] 6. Skrót „Zapisz jako” nie działa na Windows
 `QKeySequence.StandardKey.SaveAs` jest na Windows **puste** (Ctrl+Shift+S istnieje tylko w KDE/GNOME/macOS).
 
 **Poprawka:** `akcja_zapisz_jako.setShortcut(QKeySequence("Ctrl+Shift+S"))`
 
-### [ ] 7. Część listy kodowań to martwy kod (linie 421–454)
+### [x] 7. Część listy kodowań to martwy kod (linie 421–454)
 - `utf-8` po `utf-8-sig` jest zbędne – `utf-8-sig` czyta też UTF-8 bez BOM.
 - `iso-8859-2` przypisuje znak **każdemu** bajtowi, więc dekodowanie nigdy się nie wywali. `cp1252` i awaryjny blok `errors="replace"` nigdy się nie wykonają.
 - Skutek uboczny: plik binarny (.docx, .exe przez „Wszystkie pliki”) otworzy się jako sieczka znaków z komunikatem o „pomyślnym wczytaniu”.
@@ -80,7 +80,7 @@ Jeśli `os.replace` się nie powiedzie (plik tylko do odczytu, zablokowany – c
 
 **Poprawka:** ustawiać ścieżkę dopiero po sukcesie; `zapisz_plik` i `zapisz_jako` powinny zwracać `bool`.
 
-### [ ] 10. Eksport PDF zawsze pokazuje „Sukces”
+### [x] 10. Eksport PDF zawsze pokazuje „Sukces”
 `QPdfWriter` nie rzuca wyjątków, więc `try/except` niczego nie łapie. Gdy PDF jest otwarty w przeglądarce PDF, zapis się nie uda, a komunikat i tak pokaże sukces.
 
 **Poprawka:**
@@ -88,12 +88,12 @@ Jeśli `os.replace` się nie powiedzie (plik tylko do odczytu, zablokowany – c
 - w ODT ustawić format jawnie: `writer.setFormat(b"odf")`,
 - w obu eksportach dopisywać brakujące rozszerzenie.
 
-### [ ] 11. „Nowy” nie zeruje formatowania
+### [x] 11. „Nowy” nie zeruje formatowania
 `clear()` + `utrzymaj_formatowanie()` przywraca tylko krój i rozmiar. Kolor, pogrubienie i wyrównanie przechodzą z poprzedniego dokumentu.
 
 **Poprawka:** `self.edytor.setCurrentCharFormat(QTextCharFormat())` + wyrównanie do lewej.
 
-### [ ] 12. Flaga zmian nie uwzględnia cofania
+### [x] 12. Flaga zmian nie uwzględnia cofania
 Po wpisaniu czegoś i cofnięciu Ctrl+Z do stanu pierwotnego program dalej pyta o zapis.
 
 **Poprawka:** użyć wbudowanego mechanizmu Qt – `document().isModified()`, `setModified(False)`, sygnał `modificationChanged` → `setWindowModified` (znacznik `[*]` w tytule). Można wtedy usunąć własną flagę `zmodyfikowany` i `_oznacz_jako_zmodyfikowany`.
@@ -187,6 +187,6 @@ Komputery w pracowni bywają wyłączane z listwy na koniec lekcji.
 2. [x] Kolor startowy w oknie kolorów (pkt 2)
 3. [x] ~~Ostrzeżenie przed~~ (zbędne – brak zapisu do .txt) utratą formatowania przy zapisie do .txt (pkt 3)
 4. [ ] Polskie tłumaczenia Qt (pkt 14)
-5. [ ] Skrót Ctrl+Shift+S (pkt 6)
+5. [x] Skrót Ctrl+Shift+S (pkt 6)
 6. [x] Jeden numer wersji (pkt 5)
 7. [ ] Decyzja licencyjna: PyQt6 na GPL albo PySide6
