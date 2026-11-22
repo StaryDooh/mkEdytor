@@ -107,7 +107,7 @@ Np. `C:\Users\uczen12\OneDrive\Pulpit\...`.
 
 ## 🟡 Interfejs a wiek 6–9 lat
 
-### [ ] 14. Okna Qt są po angielsku
+### [x] 14. Okna Qt są po angielsku
 Menu kontekstowe edytora: „Undo / Redo / Cut / Copy / Paste / Select All”. Okno kolorów: „Basic colors”, „Custom colors”. Własny `_zapytaj_o_zapis` obchodzi problem tylko w jednym miejscu.
 
 **Poprawka (globalnie):**
@@ -120,7 +120,7 @@ if tlumacz.load(QLocale(QLocale.Language.Polish), "qtbase", "_",
 ```
 Po zbudowaniu sprawdzić, czy w `_internal\PyQt6\Qt6\translations` jest `qtbase_pl.qm`. Wtedy wystarczy zwykły `QMessageBox.question`.
 
-### [ ] 15. Brak skrótów Ctrl+B / Ctrl+I / Ctrl+U
+### [x] 15. Brak skrótów Ctrl+B / Ctrl+I / Ctrl+U
 `QTextEdit` sam ich nie obsługuje. W programie do nauki edytora to spory brak – dzieci spotkają te skróty w Wordzie i Writerze. Dopisać skróty także w podpowiedziach przycisków.
 
 ### [ ] 16. Ikony z Unicode mogą się nie wyświetlić
@@ -186,7 +186,7 @@ Komputery w pracowni bywają wyłączane z listwy na koniec lekcji.
 1. [x] Obsługa `sys.argv` (pkt 1)
 2. [x] Kolor startowy w oknie kolorów (pkt 2)
 3. [x] ~~Ostrzeżenie przed~~ (zbędne – brak zapisu do .txt) utratą formatowania przy zapisie do .txt (pkt 3)
-4. [ ] Polskie tłumaczenia Qt (pkt 14)
+4. [x] Polskie tłumaczenia Qt (pkt 14)
 5. [x] Skrót Ctrl+Shift+S (pkt 6)
 6. [x] Jeden numer wersji (pkt 5)
 7. [ ] Decyzja licencyjna: PyQt6 na GPL albo PySide6

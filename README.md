@@ -9,7 +9,7 @@ Pobierz: [Releases](https://github.com/StaryDooh/mkEdytor/releases/)
 * **Pełne formatowanie:**
     * Wybór czcionki i płynna zmiana rozmiaru tekstu.
     * Zmiana koloru czcionki (🎨).
-    * Style tekstu: pogrubienie, pochylenie i podkreślenie.
+    * Style tekstu: pogrubienie (Ctrl+B), pochylenie (Ctrl+I) i podkreślenie (Ctrl+U).
 * **Listy i akapity:**
     * Obsługa list punktowanych i numerowanych (z poprawionym formatowaniem znaków wypunktowania).
     * Wyrównywanie tekstu: do lewej, do prawej, środkowanie oraz justowanie.
@@ -54,7 +54,7 @@ Dokument `.mked` to zwykły plik tekstowy UTF-8 w formacie JSON:
 {
  "format": "mkEdytor",
  "wersja_formatu": 1,
- "program": "mkEdytor 2.0.7.0",
+ "program": "mkEdytor 2.0.9.0",
  "tresc": "<!DOCTYPE HTML ...>"
 }
 ```

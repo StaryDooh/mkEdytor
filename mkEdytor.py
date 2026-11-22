@@ -8,7 +8,8 @@ from PyQt6.QtGui import (QFont, QAction, QFontDatabase, QTextListFormat,
                          QKeySequence, QIcon, QTextDocumentWriter, QPdfWriter,
                          QPageSize, QDesktopServices, QTextCharFormat,
                          QTextBlockFormat)
-from PyQt6.QtCore import Qt, QUrl, QStandardPaths, QSettings, QTimer
+from PyQt6.QtCore import (Qt, QUrl, QStandardPaths, QSettings, QTimer,
+                          QTranslator, QLibraryInfo, QLocale)
 from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
 
 
@@ -19,6 +20,24 @@ def sciezka_zasobu(wzgledna_sciezka):
     except Exception:
         baza = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(baza, wzgledna_sciezka)
+
+
+# --- POLSKIE NAPISY W OKNACH Qt ---
+def zainstaluj_polskie_tlumaczenia(app):
+    """Ładuje polskie tłumaczenie Qt (qtbase_pl.qm): menu kontekstowe edytora
+    („Cofnij”, „Wklej”…), okno kolorów, standardowe przyciski okien dialogowych.
+    Zwraca True, jeśli tłumaczenie zostało wczytane."""
+    katalogi = [QLibraryInfo.path(QLibraryInfo.LibraryPath.TranslationsPath)]
+    if hasattr(sys, "_MEIPASS"):  # program zbudowany PyInstallerem
+        katalogi.append(os.path.join(sys._MEIPASS, "PyQt6", "Qt6", "translations"))
+    for katalog in katalogi:
+        tlumacz = QTranslator(app)
+        if tlumacz.load(QLocale(QLocale.Language.Polish, QLocale.Country.Poland),
+                        "qtbase", "_", katalog):
+            app.installTranslator(tlumacz)
+            app._tlumacz_qt = tlumacz  # trzymamy referencję, żeby tłumacz nie został usunięty
+            return True
+    return False
 
 
 # --- FORMAT DOKUMENTU mkEdytora (.mked) ---
@@ -118,7 +137,7 @@ def skojarz_mked_dla_uzytkownika():
 class NowoczesnyEdytor(QMainWindow):
 
     # Wersja jako stała klasy
-    WERSJA = "2.0.7.0"
+    WERSJA = "2.0.9.0"
     NAZWA_DOMYSLNA = "Bez nazwy"   # nazwa nowego, niezapisanego dokumentu
     CZCIONKA_DOMYSLNA = "Arial"    # krój i rozmiar tekstu w nowym dokumencie
     ROZMIAR_DOMYSLNY = 18
@@ -378,20 +397,23 @@ class NowoczesnyEdytor(QMainWindow):
         pasek.addSeparator()
 
         self.akcja_pogrubienie = QAction("𝐁", self)
-        self.akcja_pogrubienie.setToolTip("Pogrubienie")
+        self.akcja_pogrubienie.setToolTip("Pogrubienie (Ctrl+B)")
+        self.akcja_pogrubienie.setShortcut(QKeySequence("Ctrl+B"))
         self.akcja_pogrubienie.setCheckable(True)
         self.akcja_pogrubienie.triggered.connect(
             lambda ch: self.edytor.setFontWeight(QFont.Weight.Bold if ch else QFont.Weight.Normal))
         pasek.addAction(self.akcja_pogrubienie)
 
         self.akcja_pochylenie = QAction("𝐼", self)
-        self.akcja_pochylenie.setToolTip("Pochylenie")
+        self.akcja_pochylenie.setToolTip("Pochylenie (Ctrl+I)")
+        self.akcja_pochylenie.setShortcut(QKeySequence("Ctrl+I"))
         self.akcja_pochylenie.setCheckable(True)
         self.akcja_pochylenie.triggered.connect(self.edytor.setFontItalic)
         pasek.addAction(self.akcja_pochylenie)
 
         self.akcja_podkreslenie = QAction("U̲", self)
-        self.akcja_podkreslenie.setToolTip("Podkreślenie")
+        self.akcja_podkreslenie.setToolTip("Podkreślenie (Ctrl+U)")
+        self.akcja_podkreslenie.setShortcut(QKeySequence("Ctrl+U"))
         self.akcja_podkreslenie.setCheckable(True)
         self.akcja_podkreslenie.triggered.connect(self.edytor.setFontUnderline)
         pasek.addAction(self.akcja_podkreslenie)
@@ -897,6 +919,7 @@ class NowoczesnyEdytor(QMainWindow):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     app.setStyle("Fusion")
+    zainstaluj_polskie_tlumaczenia(app)
     okno = NowoczesnyEdytor()
     # Dwuklik na pliku .mked w Eksploratorze: Windows przekazuje ścieżkę jako argument
     if len(sys.argv) > 1 and os.path.isfile(sys.argv[1]):

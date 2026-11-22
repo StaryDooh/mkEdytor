@@ -1,5 +1,15 @@
 # Changelog (Historia zmian)
 
+## [2.0.9.0]
+
+### Dodano
+- Skróty klawiszowe **Ctrl+B** (pogrubienie), **Ctrl+I** (pochylenie) i **Ctrl+U** (podkreślenie) – takie same jak w Wordzie i LibreOffice Writerze. Skróty są też widoczne w podpowiedziach przycisków na pasku narzędzi.
+
+## [2.0.8.0]
+
+### Poprawiono
+- Okna i menu wbudowane w Qt były po angielsku. Program ładuje teraz polskie tłumaczenie Qt (`qtbase_pl.qm`), więc po polsku są m.in. menu pod prawym przyciskiem myszy w edytorze („Cofnij”, „Wytnij”, „Wklej”, „Zaznacz wszystko”), okno wyboru koloru („Kolory podstawowe”, „Własne kolory”) i standardowe przyciski okien dialogowych („Tak”, „Nie”, „Anuluj”). Tłumaczenie jest dołączane automatycznie przez PyInstaller.
+
 ## [2.0.7.0]
 
 ### Poprawiono
