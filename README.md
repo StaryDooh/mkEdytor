@@ -54,7 +54,7 @@ Dokument `.mked` to zwykły plik tekstowy UTF-8 w formacie JSON:
 {
  "format": "mkEdytor",
  "wersja_formatu": 1,
- "program": "mkEdytor 2.0.9.0",
+ "program": "mkEdytor 2.0.9.1",
  "tresc": "<!DOCTYPE HTML ...>"
 }
 ```

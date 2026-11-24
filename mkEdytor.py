@@ -137,10 +137,11 @@ def skojarz_mked_dla_uzytkownika():
 class NowoczesnyEdytor(QMainWindow):
 
     # Wersja jako stała klasy
-    WERSJA = "2.0.9.0"
+    WERSJA = "2.0.9.1"
     NAZWA_DOMYSLNA = "Bez nazwy"   # nazwa nowego, niezapisanego dokumentu
     CZCIONKA_DOMYSLNA = "Arial"    # krój i rozmiar tekstu w nowym dokumencie
     ROZMIAR_DOMYSLNY = 18
+    MARGINES = 30                  # odstęp tekstu od krawędzi okna (px)
 
     def __init__(self):
         super().__init__()
@@ -158,7 +159,10 @@ class NowoczesnyEdytor(QMainWindow):
         self.edytor = QTextEdit()
         domyslna_czcionka = QFont(self.CZCIONKA_DOMYSLNA, self.ROZMIAR_DOMYSLNY)
         self.edytor.setFont(domyslna_czcionka)
-        self.edytor.setStyleSheet("QTextEdit { padding: 20px; border: none; }")
+        self.edytor.setStyleSheet("QTextEdit { border: none; }")
+        # Margines jest częścią dokumentu: tekst odsuwa się od krawędzi okna,
+        # a pasek przewijania zostaje przy krawędzi. Nie wpływa na wydruk, PDF ani ODT.
+        self.edytor.document().setDocumentMargin(self.MARGINES)
         self.setCentralWidget(self.edytor)
 
         self.stworz_menu()

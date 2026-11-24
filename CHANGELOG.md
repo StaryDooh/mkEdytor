@@ -1,5 +1,10 @@
 # Changelog (Historia zmian)
 
+## [2.0.9.1]
+
+### Zmieniono
+- Tekst w edytorze ma teraz margines 30 px od krawędzi okna (wcześniej 20 px). Margines jest ustawiony w dokumencie (`setDocumentMargin`), więc pasek przewijania zostaje przy krawędzi okna. Margines nie jest zapisywany w pliku `.mked` ani w eksporcie do HTML.
+
 ## [2.0.9.0]
 
 ### Dodano
