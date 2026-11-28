@@ -1,5 +1,14 @@
 # Changelog (Historia zmian)
 
+## [2.0.9.2]
+
+### Poprawiono
+- Program pytał o zapisanie zmian przy zamykaniu, nawet gdy nic nie wpisano – ustawienie marginesu dokumentu przy starcie było traktowane przez Qt jako zmiana.
+- Wpisanie tekstu i skasowanie go (Backspace/Delete) pozostawiało gwiazdkę `*` w tytule i pytanie o zapis. Program porównuje teraz treść dokumentu (tekst i formatowanie) ze stanem z ostatniego zapisu, otwarcia lub utworzenia dokumentu.
+
+### Zmieniono
+- Powtórzony w trzech miejscach blok „zapytaj → zapisz → sprawdź” (`closeEvent`, `nowy_plik`, `otworz_plik`) wydzielono do metody `_czy_mozna_porzucic()`.
+
 ## [2.0.9.1]
 
 ### Zmieniono

@@ -152,7 +152,7 @@ Komputery w pracowni bywają wyłączane z listwy na koniec lekcji.
 
 ## 🔵 Nadmiarowy kod i jakość
 
-- [ ] Blok „zapytaj → zapisz → sprawdź” powtórzony 3 razy (`closeEvent`, `nowy_plik`, `otworz_plik`) – wydzielić do `_czy_mozna_porzucic() -> bool`.
+- [x] Blok „zapytaj → zapisz → sprawdź” powtórzony 3 razy (`closeEvent`, `nowy_plik`, `otworz_plik`) – wydzielić do `_czy_mozna_porzucic() -> bool`.
 - [ ] `wstaw_liste_punktowana` i `wstaw_liste_numerowana` są identyczne poza stylem – jedna metoda `_przelacz_liste(styl)`; do zdejmowania listy standardowe `lista.remove(blok)` zamiast `setObjectIndex(-1)`.
 - [ ] Cofnij/ponów/wytnij/kopiuj/wklej mają osobne `QAction` w menu i na pasku – jedna akcja w obu miejscach (od razu ze skrótem i podpowiedzią); wyłączać je sygnałami `undoAvailable` / `copyAvailable`.
 - [ ] `self.resize(1000, 700)` nic nie daje przy `showMaximized()`.
